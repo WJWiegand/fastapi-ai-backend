@@ -11,4 +11,5 @@ python-multipart
 pydantic
 tiktoken
 langchain-community
+langchain_chroma
 
