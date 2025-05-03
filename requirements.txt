@@ -3,6 +3,7 @@ uvicorn[standard]
 pypdf
 langchain
 ollama
+pathlib
 chromadb
 pytest
 boto3
@@ -10,9 +11,10 @@ openai
 python-multipart
 pydantic
 tiktoken
-langchain-community
+langchain_core
 langchain_chroma
 langchain_community
 langchain_ollama
-googleapiclient
-
+google-api-python-client
+collections
+langchain_huggingface
