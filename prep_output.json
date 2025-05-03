@@ -1,0 +1,21 @@
+{
+    "combined_document": {
+        "keywords": {
+            "Exploring and Inspecting Data": "This involves understanding the structure, distribution, patterns, and quality of data sets to identify any issues or opportunities for further analysis.",
+            "Standardizing Date Representations": "The process of converting all date representations in a dataset into a uniform format. This ensures consistency and allows for easier comparison and analysis.",
+            "Organizing Data Based on Required Analysis": "Arranging the data according to the specific questions or problems being addressed, so that it is easily accessible and relevant information is readily available.",
+            "Finding Missing Data": "Identifying instances where data points are absent in a dataset. These gaps may require imputation (filling with suitable values) or exclusion from analysis depending on the context.",
+            "Identifying and Correcting Errors in Data": "Locating and rectifying mistakes in the data, such as incorrect values, typographical errors, and logical inconsistencies that could negatively impact analysis.",
+            "Data Cleaning": "The process of removing or modifying errors, duplicates, or irrelevant information from a dataset to improve its quality and accuracy.",
+            "Data Enrichment": "Incorporating additional data sources or features into an existing dataset to make it more informative, insightful, and actionable for the intended analysis.",
+            "Data Validation": "The process of ensuring that the collected data conforms to specified rules and requirements, maintaining data integrity and consistency throughout the dataset.",
+            "Dealing with Outliers in Data": "Analyzing and addressing extreme data points or values that may significantly deviate from other observations, as they can skew results and impact conclusions."
+        },
+        "youtube_search": [
+            "https://www.youtube.com/watch?v=bDhvCp3_lYw",
+            "https://www.youtube.com/watch?v=KQJ8jm7PGVo",
+            "https://www.youtube.com/watch?v=bOh_eqM0zbU",
+            "https://www.youtube.com/watch?v=4CBniCFs0qg"
+        ]
+    }
+}

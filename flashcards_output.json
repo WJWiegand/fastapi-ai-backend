@@ -1,0 +1,30 @@
+[
+    {
+        "question": "What is data wrangling?",
+        "answer": "Data wrangling is the process of converting data into a usable form through exploration, preparation, cleaning, standardizing, enriching, validating, and publishing of the data."
+    },
+    {
+        "question": "What are the key steps in the data wrangling process?",
+        "answer": "The key steps in data wrangling are discovering (understanding the data), structuring (formatting the data into a useful structure), cleaning (removing and/or correcting errors and standardizing the data), enriching (adding variables or values to improve the information contained in the data), validating (verifying whether the data is consistent and of sufficient quality), publishing (putting the data into a file format useful for analysis)."
+    },
+    {
+        "question": "What does Paul have to do with the conservation status of South African animals?",
+        "answer": "Dr Paul J van Staden has authored or contributed to a study guide that covers the topic of exploring and inspecting data, which includes understanding the conservation status of South African animals."
+    },
+    {
+        "question": "What are some examples of conservation status codes?",
+        "answer": "Some examples of conservation status codes are EX (Extinct), EW (Extinct in the Wild), CR (Critically Endangered), EN (Endangered), VU (Vulnerable), NT (Near Threatened), CD (Conservation Dependent), LC (Least Concern), and DD (Data Deficient)."
+    },
+    {
+        "question": "When should Paul consider the Treaty of Paris in 1815 relevant to his data?",
+        "answer": "Paul should consider the Treaty of Paris in 1815 relevant to his data if he is working with historical or sociopolitical data related to France, as the treaty had a significant impact on international relations and slavery."
+    },
+    {
+        "question": "What was the Concordat of 11 June 1817 about?",
+        "answer": "The Concordat of 11 June 1817 was a concordat between the kingdom of France and the Holy See, which aimed to increase the number of dioceses in France, revise ecclesiastical geography, and re-establish suppressed dioceses."
+    },
+    {
+        "question": "Can the information about the Treaty of Paris and Concordat of 11 June 1817 be trusted?",
+        "answer": "The information provided is accurate based on Wikipedia articles, but it is always important to verify the sources and cross-reference information from multiple reputable sources before making conclusions or using data in research or analysis."
+    }
+]
