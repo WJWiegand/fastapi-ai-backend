@@ -39,8 +39,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-import os
-
 @app.on_event("startup")
 def clear_db_on_start():
     if os.getenv("RESET_ON_STARTUP", "false").lower() == "true":
