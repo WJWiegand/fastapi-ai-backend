@@ -1,5 +1,14 @@
+fastapi
+uvicorn[standard]
 pypdf
 langchain
-chromadb # Vector storage
+ollama
+chromadb
 pytest
 boto3
+openai
+python-multipart
+pydantic
+tiktoken
+langchain-community
+

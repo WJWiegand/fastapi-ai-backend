@@ -135,9 +135,15 @@ def extract_keywords_with_descriptions(text: str, main_topic: str, description: 
 
 
 # Make Youtube suggetions based on the keywords
-YOUTUBE_API_KEY = "AIzaSyCOPEDia9hYvb1pzKxGQubgoF-rkB6GWIA"
+import os
+from googleapiclient.discovery import build
+
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 def youtube_suggestions(keywords_by_doc: dict) -> dict:
+    if not YOUTUBE_API_KEY:
+        raise ValueError("Missing YouTube API Key")
+
     youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
     queries = {}
 
