@@ -16,5 +16,4 @@ langchain_chroma
 langchain_community
 langchain_ollama
 google-api-python-client
-collections
 langchain_huggingface
