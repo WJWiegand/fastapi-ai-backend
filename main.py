@@ -38,6 +38,29 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+import os
+
+@app.on_event("startup")
+def clear_db_on_start():
+    if os.getenv("RESET_ON_STARTUP", "false").lower() == "true":
+        try:
+            os.makedirs(DataPath, exist_ok=True)
+            print(f"📂 Ensured DataPath exists: {DataPath}")
+
+            print("🗑️ Clearing local files...")
+            clear_local_files()
+
+            print("🧹 Clearing Chroma database...")
+            clear_database(allow_reset=True)
+
+            print("✅ Startup cleanup completed successfully.")
+        except Exception as e:
+            print(f"❌ Error during startup cleanup: {e}")
+    else:
+        print("🚀 Skipping database and file cleanup on startup.")
+
+
 @app.post("/prep")
 async def prep_existing_data():
     try:
@@ -234,6 +257,8 @@ async def upload_file(file: UploadFile = File(...)):
     except Exception as e:
         print(f"❌ Error during upload: {e}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+    
+
 @app.post("/qanda")
 async def ask_question(user_question: str = Query(...)):
     try:
