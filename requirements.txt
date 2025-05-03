@@ -12,4 +12,6 @@ pydantic
 tiktoken
 langchain-community
 langchain_chroma
+langchain_community
+langchain_ollama
 
