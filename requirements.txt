@@ -17,3 +17,4 @@ langchain_community
 langchain_ollama
 google-api-python-client
 langchain_huggingface
+langchain_groq

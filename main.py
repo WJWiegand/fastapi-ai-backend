@@ -7,27 +7,37 @@ import os
 from prep import extract_main_topic, extract_keywords_with_descriptions, youtube_suggestions, save_extracted_info
 from testknowledge import generate_questions_from_context, save_questions_to_file,fetch_and_generate_questions
 from flashcard import generate_flashcards , save_flashcards
-from get_embedding import get_embedding
+from get_embedding import ChatGroqEmbeddings
 from load_chunk import clear_local_files, run_chunking , DataPath, clear_database
 from qanda import query_rag
 
-from langchain_ollama import OllamaLLM
+from langchain_groq import ChatGroq
 from langchain.chains import RetrievalQA
 from get_embedding import get_embedding
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 
-
 ChromaPath = "chroma_db"
-llm = OllamaLLM(model="llama3")  # Or the model you prefer
+DataPath = "data"
+
+# Initialize Groq LLM and Embeddings
+llm = ChatGroq(
+    model_name="mixtral-8x7b-32768",  # Replace with the correct Groq model if needed
+    api_key=os.getenv("GROQ_API_KEY")
+)
+
+def get_embedding():
+    """
+    Returns an embedding function using Groq's ChatGroqEmbeddings.
+    """
+    return ChatGroqEmbeddings(
+        model="nomic-embed-text",  # Replace with the correct Groq embedding model if needed
+        api_key=os.getenv("GROQ_API_KEY")
+    )
+
+# Initialize Chroma with Groq embeddings
 db = Chroma(persist_directory=ChromaPath, embedding_function=get_embedding())
 retriever = db.as_retriever()
-
-qa_chain = RetrievalQA.from_chain_type(
-    llm=llm,
-    retriever=retriever,
-    return_source_documents=True
-)
 
 app = FastAPI()
 
@@ -50,7 +60,7 @@ def clear_db_on_start():
             clear_local_files()
 
             print("🧹 Clearing Chroma database...")
-            clear_database(allow_reset=True)
+            clear_database()
 
             print("✅ Startup cleanup completed successfully.")
         except Exception as e:
@@ -58,14 +68,12 @@ def clear_db_on_start():
     else:
         print("🚀 Skipping database and file cleanup on startup.")
 
-
 @app.post("/prep")
 async def prep_existing_data():
     try:
         if not os.path.exists(ChromaPath):
             raise HTTPException(status_code=400, detail="Chroma database does not exist.")
 
-        db = Chroma(persist_directory=ChromaPath, embedding_function=get_embedding())
         raw_chunks = db.get()["documents"]
         ids = db.get()["ids"]
         metadatas = db.get()["metadatas"]
@@ -104,53 +112,34 @@ async def prep_existing_data():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-    
-    
+
 @app.get("/test")
 async def test_knowledge():
-    """
-    Endpoint to generate multiple-choice and open-ended questions based on the existing chunks in the Chroma database.
-    """
     try:
-        # Check if the Chroma database exists
         if not os.path.exists(ChromaPath):
             raise HTTPException(status_code=400, detail="Chroma database does not exist.")
 
-        print("🔍 Loading documents from Chroma...")
-        db = Chroma(persist_directory=ChromaPath, embedding_function=get_embedding())
         raw_chunks = db.get()["documents"]
         ids = db.get()["ids"]
         metadatas = db.get()["metadatas"]
 
-        # Reconstruct Document objects with metadata
         chunks = [
             Document(page_content=text, metadata={"id": ids[i], **metadatas[i]})
             for i, text in enumerate(raw_chunks)
         ]
 
-        # Combine all chunks into a single text
-        print("📚 Combining all chunks into a single text...")
         combined_text = " ".join(chunk.page_content for chunk in chunks)
-
-        # Extract the main topic of the document
-        print("✨ Extracting main topic...")
         main_topic = extract_main_topic(combined_text)
-        print(f"Main Topic: {main_topic}")
 
-        # Fetch and generate questions
-        print("📝 Generating questions...")
         questions = fetch_and_generate_questions()
 
         if not questions:
-            print("⚠️ No questions were generated.")
             return {
                 "message": "No questions were generated.",
                 "chunks_count": len(chunks),
                 "questions": []
             }
 
-        # Save the generated questions
-        print("💾 Saving your questions...")
         save_questions_to_file(questions)
 
         return {
@@ -164,45 +153,24 @@ async def test_knowledge():
 
 @app.get("/flashcards")
 async def generate_flashcards_endpoint():
-    """
-    Endpoint to generate flashcards based on the chunks within the Chroma database.
-    """
     try:
-        # Check if the Chroma database exists
         if not os.path.exists(ChromaPath):
             raise HTTPException(status_code=400, detail="Chroma database does not exist.")
 
-        print("🔍 Loading documents from Chroma...")
-        db = Chroma(persist_directory=ChromaPath, embedding_function=get_embedding())
         raw_chunks = db.get()["documents"]
         ids = db.get()["ids"]
         metadatas = db.get()["metadatas"]
 
-        # Reconstruct Document objects with metadata
         chunks = [
             Document(page_content=text, metadata={"id": ids[i], **metadatas[i]})
             for i, text in enumerate(raw_chunks)
         ]
 
-        # Combine all chunks into a single text
-        print("📚 Combining all chunks into a single text...")
         combined_text = " ".join(chunk.page_content for chunk in chunks)
-
-        # Generate flashcards
-        print("✨ Generating flashcards...")
         flashcards = generate_flashcards(combined_text)
 
         if flashcards:
-            print("Generated Flashcards:")
-            for i, flashcard in enumerate(flashcards, 1):
-                print(f"\nFlashcard {i}:")
-                print(f"Q: {flashcard['question']}")
-                print(f"A: {flashcard['answer']}")
-
-            # Save flashcards to a file
             save_flashcards(flashcards)
-        else:
-            print("No flashcards generated.")
 
         return {
             "message": "Flashcards generated successfully.",
@@ -212,59 +180,36 @@ async def generate_flashcards_endpoint():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-    
+
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
-    """
-    Endpoint to upload a PDF file and process it using the run_chunking function.
-    """
     try:
-     
-
-        # Ensure the data directory exists
         os.makedirs(DataPath, exist_ok=True)
-        clear_local_files()  # Clear old files if needed
-        # Save the uploaded file to the data directory
+        clear_local_files()
+
         file_path = Path(DataPath) / file.filename
-        print(f"📂 Saving file to: {file_path}")
         with file_path.open("wb") as f:
             shutil.copyfileobj(file.file, f)
-            
-        # 🌟 Double-check: wait for file to be fully saved
+
         if not file_path.exists() or file_path.stat().st_size == 0:
             raise ValueError(f"File {file.filename} was not saved correctly.")
 
-        print(f"📂 File saved successfully: {file.filename}")
+        clear_database()
 
-        print("📥 Clearing old data and preparing for upload...")
-        clear_database(allow_reset=True)
-  # Ensure this works without restrictions
+        new_chunks = run_chunking(reset=True)
 
-
-
-        # Run the chunking process
-        print(f"📂 Processing file: {file.filename}")
-        new_chunks = run_chunking(reset=True)  # Pass reset=True if needed
-
-        print(f"✅ File processed successfully. New chunks added: {len(new_chunks)}")
         return {
             "message": f"File '{file.filename}' processed successfully.",
             "new_chunks_added": len(new_chunks),
         }
 
     except Exception as e:
-        print(f"❌ Error during upload: {e}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-    
 
 @app.post("/qanda")
 async def ask_question(user_question: str = Query(...)):
     try:
-        print(f"🔍 User question: {user_question}")
         result = query_rag(user_question)
-        print(f"🔍 Retrieved answer: {result['answer']}")
-        print(f"🔍 Retrieved sources: {result['sources']}")
         return {"answer": result["answer"], "sources": result["sources"]}
     except Exception as e:
-        print(f"❌ Error during QandA: {e}")
         return {"detail": f"An error occurred: {str(e)}"}

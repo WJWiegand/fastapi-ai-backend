@@ -1,10 +1,8 @@
 import json
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
+import os
 from langchain_core.documents import Document
-from langchain_community.llms import Ollama
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaLLM
+from langchain_groq import ChatGroq
 from get_embedding import get_embedding
 from langchain.prompts import ChatPromptTemplate
 
@@ -12,13 +10,18 @@ ChromaPath = "chroma_db"
 db = Chroma(persist_directory=ChromaPath, embedding_function=get_embedding())
 retriever = db.as_retriever()
 
+# Initialize the Groq LLM
+llm = ChatGroq(
+    model_name="mixtral-8x7b-32768",  # or "mistral-7b-8k"
+    api_key=os.getenv("GROQ_API_KEY")
+)
+
 def generate_flashcards(context: str) -> list:
     """
     Generate flashcards in a question-and-answer format based on the given context.
     """
-    llm = OllamaLLM(model="mistral")
     prompt = ChatPromptTemplate.from_template("""
-    Given the following context, generate flashcards in a question-and-answer format.
+    You are an expert teacher. Based on the following context, generate flashcards in a question-and-answer format.
     Each flashcard should focus on a key concept or topic from the context.
 
     CONTEXT:
@@ -31,12 +34,16 @@ def generate_flashcards(context: str) -> list:
     Return the flashcards as a JSON array, where each flashcard is an object with "question" and "answer" fields.
     """)
 
+    # Format the prompt with the provided context
     formatted_prompt = prompt.format(context=context)
-    response = llm.invoke(formatted_prompt)
+
+    # Invoke the Groq LLM to generate flashcards
+    response = llm.invoke({"query": formatted_prompt})
 
     try:
-        flashcards = json.loads(response)
-    except json.JSONDecodeError:
+        # Parse the response as JSON
+        flashcards = json.loads(response["result"])
+    except (json.JSONDecodeError, KeyError):
         print("Error: Failed to parse flashcards. Please check the LLM response.")
         flashcards = []
 
@@ -54,7 +61,6 @@ def save_flashcards(flashcards: list, output_path="flashcards_output.json"):
 
 def main():
     print("🔍 Loading documents from Chroma...")
-    db = Chroma(persist_directory=ChromaPath, embedding_function=get_embedding())
     raw_chunks = db.get()["documents"]
     ids = db.get()["ids"]
     metadatas = db.get()["metadatas"]
@@ -65,6 +71,15 @@ def main():
         for i, text in enumerate(raw_chunks)
     ]
 
+    # Combine all chunks into a single context
+    combined_context = " ".join([chunk.page_content for chunk in chunks])
+
+    # Generate flashcards
+    print("✨ Generating flashcards...")
+    flashcards = generate_flashcards(combined_context)
+
+    # Save flashcards to a file
+    save_flashcards(flashcards)
 
 
 if __name__ == "__main__":

@@ -1,28 +1,33 @@
+import os
 import json
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_core.documents import Document
-from langchain_community.llms import Ollama
+from langchain_groq import ChatGroq
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaLLM
 from get_embedding import get_embedding
 from googleapiclient.discovery import build
 
+# Initialize Chroma DB
 ChromaPath = "chroma_db"
 db = Chroma(persist_directory=ChromaPath, embedding_function=get_embedding())
 retriever = db.as_retriever()
 raw_chunks = db.get()["documents"]
-ids = db.get()["ids"]  
-metadatas = db.get()["metadatas"]  
+ids = db.get()["ids"]
+metadatas = db.get()["metadatas"]
 chunks = [
-        Document(page_content=text, metadata={"id": ids[i], **metadatas[i]})
-        for i, text in enumerate(raw_chunks)
-    ]
+    Document(page_content=text, metadata={"id": ids[i], **metadatas[i]})
+    for i, text in enumerate(raw_chunks)
+]
 
+# Load Groq LLM
+llm = ChatGroq(
+    model_name="mixtral-8x7b-32768",  # or "mistral-7b-8k"
+    api_key=os.getenv("GROQ_API_KEY")
+)
 
-# Need to extract the main topic of the document so there is an accurate description later on
+# Extract the main topic of the document
 def extract_main_topic(text: str) -> str:
-    llm = Ollama(model="mistral")
     prompt = PromptTemplate(
         template="""
         Given the following text, identify the main topic or theme of the document in one sentence.
@@ -34,15 +39,12 @@ def extract_main_topic(text: str) -> str:
         """,
         input_variables=["text"]
     )
-
     chain = LLMChain(llm=llm, prompt=prompt)
-    main_topic = chain.run({"text": text})
-    return main_topic.strip()
+    result = chain.invoke({"text": text})
+    return result['text'].strip()
 
-
-# Need to extract keywords from the document
-def extract_keywords(text: str, main_topic: str, Description: str) -> list:
-    llm = Ollama(model="mistral")
+# Extract keywords from the document
+def extract_keywords(text: str, main_topic: str, description: str) -> list:
     prompt = PromptTemplate(
         template="""
         Given the following text and the main topic, extract the most important key concepts or topics that are directly relevant to the main topic.
@@ -54,21 +56,30 @@ def extract_keywords(text: str, main_topic: str, Description: str) -> list:
         {main_topic}
 
         Description of the key concepts or topics that are essential to understanding the material:
-        {Description}
+        {description}
 
         Return them as a comma-separated list, prioritizing relevance and uniqueness.
         """,
-        input_variables=["text", "main_topic", "Description"]
+        input_variables=["text", "main_topic", "description"]
     )
-
     chain = LLMChain(llm=llm, prompt=prompt)
-    response = chain.run({"text": text, "main_topic": main_topic, "Description": Description})
+    response = chain.invoke({"text": text, "main_topic": main_topic, "description": description})['text']
     keywords = [kw.strip() for kw in response.split(",")]
-    return filter_keywords(keywords, main_topic) 
+    return filter_keywords(keywords, main_topic)
 
-# Score the chunk relevance to the main topic se we know what the main topic is
+# Filter out filler keywords
+def filter_keywords(keywords: list, main_topic: str) -> list:
+    stop_words = {"the", "and", "of", "in", "to", "for", "with", "on", "by", "an", "or"}
+    filtered_keywords = []
+    for keyword in keywords:
+        keyword_lower = keyword.lower()
+        if keyword_lower not in stop_words and keyword_lower not in filtered_keywords:
+            if main_topic.lower() in keyword_lower or keyword_lower in main_topic.lower():
+                filtered_keywords.append(keyword)
+    return filtered_keywords
+
+# Score relevance of a chunk to the main topic
 def score_chunk_relevance(chunk: str, main_topic: str) -> float:
-    llm = Ollama(model="mistral")
     prompt = PromptTemplate(
         template="""
         Given the following chunk of text and the main topic, rate the relevance of the chunk to the main topic on a scale of 0 to 1.
@@ -83,32 +94,15 @@ def score_chunk_relevance(chunk: str, main_topic: str) -> float:
         """,
         input_variables=["chunk", "main_topic"]
     )
-
     chain = LLMChain(llm=llm, prompt=prompt)
-    relevance_score = chain.run({"chunk": chunk, "main_topic": main_topic})
-    relevant_chunks = [
-    chunk for chunk in chunks
-    if score_chunk_relevance(chunk.page_content, main_topic) >= 0.7
-]
-    return float(relevance_score.strip())
+    score = chain.invoke({"chunk": chunk, "main_topic": main_topic})['text']
+    try:
+        return float(score.strip())
+    except ValueError:
+        return 0.0
 
-
-
-
-# Need to remove all the fill in words
-def filter_keywords(keywords: list, main_topic: str) -> list:
-    stop_words = {"the", "and", "of", "in", "to", "for", "with", "on", "by", "an", "or"}
-    filtered_keywords = []
-    for keyword in keywords:
-        keyword_lower = keyword.lower()
-        if keyword_lower not in stop_words and keyword_lower not in filtered_keywords:
-            if main_topic.lower() in keyword_lower or keyword_lower in main_topic.lower():
-                filtered_keywords.append(keyword)
-    return filtered_keywords
-
-# Need to retieve more informaiton about the keywords
+# Extract keywords and provide descriptions
 def extract_keywords_with_descriptions(text: str, main_topic: str, description: str) -> dict:
-    llm = Ollama(model="mistral")
     prompt = PromptTemplate(
         template="""
         Given the following text and the main topic, extract the most important key concepts or topics that are directly relevant to the main topic.
@@ -127,23 +121,19 @@ def extract_keywords_with_descriptions(text: str, main_topic: str, description: 
         """,
         input_variables=["text", "main_topic", "description"]
     )
-
     chain = LLMChain(llm=llm, prompt=prompt)
-    response = chain.run({"text": text, "main_topic": main_topic, "description": description})
-    keywords_with_descriptions = json.loads(response)
-    return keywords_with_descriptions
+    response = chain.invoke({"text": text, "main_topic": main_topic, "description": description})['text']
+    try:
+        return json.loads(response)
+    except json.JSONDecodeError:
+        return {}
 
-
-# Make Youtube suggetions based on the keywords
-import os
-from googleapiclient.discovery import build
-
+# Get YouTube suggestions
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 def youtube_suggestions(keywords_by_doc: dict) -> dict:
     if not YOUTUBE_API_KEY:
         raise ValueError("Missing YouTube API Key")
-
     youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
     queries = {}
 
@@ -157,8 +147,6 @@ def youtube_suggestions(keywords_by_doc: dict) -> dict:
             videoDuration="any"
         )
         response = request.execute()
-
-        # Extract video links from the response
         video_links = [
             f"https://www.youtube.com/watch?v={item['id']['videoId']}"
             for item in response.get("items", [])
@@ -166,7 +154,7 @@ def youtube_suggestions(keywords_by_doc: dict) -> dict:
         queries[doc_id] = video_links
     return queries
 
-# Save the extracted information to a JSON file so we can see what we have
+# Save final output
 def save_extracted_info(keywords_by_doc, youtube_queries, output_path="prep_output.json"):
     combined = {
         doc_id: {
@@ -176,5 +164,3 @@ def save_extracted_info(keywords_by_doc, youtube_queries, output_path="prep_outp
     }
     with open(output_path, "w") as f:
         json.dump(combined, f, indent=4)
-
-

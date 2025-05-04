@@ -1,22 +1,35 @@
 import os
 import argparse
-import shutil
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaLLM
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_groq import ChatGroq, ChatGroqEmbeddings
 from langchain.schema.document import Document
-from get_embedding import get_embedding
 from collections import defaultdict
-import time
 
+# Paths and configurations
 ChromaPath = "chroma_db"
+DataPath = "data"
+ALLOW_RESET = True
+
+# Initialize Groq LLM and Embeddings
+llm = ChatGroq(
+    model_name="mixtral-8x7b-32768",  # Replace with the correct Groq model if needed
+    api_key=os.getenv("GROQ_API_KEY")
+)
+
+def get_embedding():
+    """
+    Returns an embedding function using Groq's ChatGroqEmbeddings.
+    """
+    return ChatGroqEmbeddings(
+        model="nomic-embed-text",  # Replace with the correct Groq embedding model if needed
+        api_key=os.getenv("GROQ_API_KEY")
+    )
+
+# Initialize Chroma with Groq embeddings
 db = Chroma(persist_directory=ChromaPath, embedding_function=get_embedding())
 retriever = db.as_retriever()
-DataPath = "data"
-import os
-ALLOW_RESET = True
 
 def main():
     parser = argparse.ArgumentParser()
@@ -28,7 +41,7 @@ def main():
         clear_database()
 
     run_chunking(reset=args.reset)
-    
+
 def run_chunking(reset=False):
     """
     Process the uploaded file and chunk it into smaller pieces.
@@ -66,7 +79,6 @@ def load_documents():
 
 def split_documents(documents: list[Document]):
     splitter = RecursiveCharacterTextSplitter(
-        
         chunk_size=500, 
         chunk_overlap=50,
         length_function=len,

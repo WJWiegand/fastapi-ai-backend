@@ -3,7 +3,7 @@ import random
 import os
 import json
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaLLM
+from langchain_groq import ChatGroq
 from get_embedding import get_embedding
 
 # Initialize Chroma database and retriever
@@ -12,7 +12,10 @@ db = Chroma(persist_directory=ChromaPath, embedding_function=get_embedding())
 retriever = db.as_retriever()
 
 # Initialize LLM
-llm = OllamaLLM(model="mistral")
+llm = ChatGroq(
+    model_name="mixtral-8x7b-32768",  # or "mistral-7b-8k"
+    api_key=os.getenv("GROQ_API_KEY")
+)
 def generate_questions_from_context(context: str, main_topic: str):
     """
     Generate a question (multiple-choice or open-ended) based on the provided context and main topic.
