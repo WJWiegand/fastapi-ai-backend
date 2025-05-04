@@ -1,11 +1,12 @@
 import os
-from langchain_groq import ChatGroq
+from langchain.embeddings import OpenAIEmbeddings
 
 def get_embedding():
     """
-    Returns an embedding function using Groq's ChatGroq.
+    Returns an embedding function using Groq's OpenAI-compatible embedding API.
     """
-    return ChatGroq(
-        model_name="nomic-embed-text",  # Replace with the correct Groq embedding model if needed
-        api_key=os.getenv("GROQ_API_KEY")
+    return OpenAIEmbeddings(
+        model="nomic-embed-text",
+        openai_api_base="https://api.groq.com/openai/v1",
+        openai_api_key=os.getenv("GROQ_API_KEY")
     )
