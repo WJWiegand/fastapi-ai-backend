@@ -1,8 +1,7 @@
 import argparse
 import os
 from langchain_chroma import Chroma
-from langchain_groq import ChatGroq
-from langchain_openai import OpenAIEmbeddings
+from langchain_groq import ChatGroq, GroqEmbeddings
 from langchain.chains import RetrievalQA
 from langchain.prompts import ChatPromptTemplate
 
@@ -14,7 +13,7 @@ def get_embedding():
     """
     Returns an embedding function using Groq's ChatGroqEmbeddings.
     """
-    return OpenAIEmbeddings(
+    return GroqEmbeddings(
         model="nomic-embed-text",  # Replace with the correct Groq embedding model if needed
         api_key=os.getenv("GROQ_API_KEY")
     )

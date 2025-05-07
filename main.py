@@ -7,7 +7,7 @@ import os
 from prep import extract_main_topic, extract_keywords_with_descriptions, youtube_suggestions, save_extracted_info
 from testknowledge import generate_questions_from_context, save_questions_to_file,fetch_and_generate_questions
 from flashcard import generate_flashcards , save_flashcards
-from get_embedding import OpenAIEmbeddings
+from get_embedding import GroqEmbeddings
 from load_chunk import clear_local_files, run_chunking , DataPath, clear_database
 from qanda import query_rag
 
@@ -25,15 +25,6 @@ llm = ChatGroq(
     model_name="mixtral-8x7b-32768",  # Replace with the correct Groq model if needed
     api_key=os.getenv("GROQ_API_KEY")
 )
-
-def get_embedding():
-    """
-    Returns an embedding function using Groq's ChatGroqEmbeddings.
-    """
-    return OpenAIEmbeddings(
-        model="nomic-embed-text",  # Replace with the correct Groq embedding model if needed
-        api_key=os.getenv("GROQ_API_KEY")
-    )
 
 # Initialize Chroma with Groq embeddings
 db = Chroma(persist_directory=ChromaPath, embedding_function=get_embedding())

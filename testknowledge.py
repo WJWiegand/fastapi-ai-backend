@@ -3,7 +3,7 @@ import random
 import os
 import json
 from langchain_chroma import Chroma
-from langchain_groq import ChatGroq
+from langchain_groq import ChatGroq, GroqEmbeddings
 from get_embedding import get_embedding
 
 # Initialize Chroma database and retriever

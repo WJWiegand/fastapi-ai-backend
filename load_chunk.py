@@ -3,8 +3,7 @@ import argparse
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
-from langchain_groq import ChatGroq
-from langchain_openai import OpenAIEmbeddings
+from langchain_groq import ChatGroq, GroqEmbeddings
 from langchain.schema.document import Document
 from collections import defaultdict
 
@@ -21,9 +20,9 @@ llm = ChatGroq(
 
 def get_embedding():
     """
-    Returns an embedding function using Groq's ChatGroqEmbeddings.
+    Returns an embedding function using Groq's GroqEmbeddings.
     """
-    return OpenAIEmbeddings(
+    return GroqEmbeddings(
         model="nomic-embed-text",  # Replace with the correct Groq embedding model if needed
         api_key=os.getenv("GROQ_API_KEY")
     )
