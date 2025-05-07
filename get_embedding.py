@@ -1,5 +1,5 @@
 import os
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 
 def get_embedding():
     """

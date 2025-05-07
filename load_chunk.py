@@ -3,7 +3,8 @@ import argparse
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
-from langchain_groq import ChatGroq, OpenAIEmbeddings
+from langchain_groq import ChatGroq
+from langchain_openai import OpenAIEmbeddings
 from langchain.schema.document import Document
 from collections import defaultdict
 

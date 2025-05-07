@@ -1,7 +1,8 @@
 import argparse
 import os
 from langchain_chroma import Chroma
-from langchain_groq import ChatGroq, OpenAIEmbeddings
+from langchain_groq import ChatGroq
+from langchain_openai import OpenAIEmbeddings
 from langchain.chains import RetrievalQA
 from langchain.prompts import ChatPromptTemplate
 

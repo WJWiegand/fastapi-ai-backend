@@ -4,6 +4,7 @@ from langchain_core.documents import Document
 from langchain_chroma import Chroma
 from langchain_groq import ChatGroq
 from get_embedding import get_embedding
+from langchain_openai import OpenAIEmbeddings
 from langchain.prompts import ChatPromptTemplate
 
 ChromaPath = "chroma_db"
